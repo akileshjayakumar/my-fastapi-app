@@ -1,65 +1,88 @@
-# FastAPI App with Celery, RabbitMQ, Flower, and Docker
+# FastAPI + Celery Async Task API
 
-## Tech Stack
+Run asynchronous arithmetic jobs with FastAPI, Celery, RabbitMQ, Redis, and Flower using a single Docker Compose command.
 
-- **[FastAPI](https://fastapi.tiangolo.com/)**
-- **[Celery](https://docs.celeryq.dev/en/stable/)**
-- **[RabbitMQ](https://www.rabbitmq.com/documentation.html)**
-- **[Flower](https://flower.readthedocs.io/en/latest/)**
-- **[Docker](https://www.docker.com/)**
+## Quick Start
 
-## Project Structure
-
-```
-my-fastapi-app/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   └── tasks.py
-├── docker-compose.yml
-├── Dockerfile
-├── requirements.txt
-├── README.md
-└── diagram.png
+```bash
+git clone https://github.com/akileshjayakumar/my-fastapi-app
+cd my-fastapi-app
+docker compose up --build
 ```
 
-## Setup
+After startup:
+- API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Flower dashboard: [http://localhost:5555](http://localhost:5555)
+- RabbitMQ management: [http://localhost:15672](http://localhost:15672) (`guest` / `guest`)
 
-1. **Clone the Repository**
+## Core Capabilities
 
-   ```bash
-   git clone https://github.com/akileshjayakumar/my-fastapi-app
-   cd my-fastapi-app
-   ```
+- Queue `add` and `multiply` tasks asynchronously
+- Retrieve task status/results by task ID
+- Monitor workers and task activity in Flower
+- Run the full stack in containers (web, worker, broker, backend, monitor)
 
-2. **Build and Start Containers**
+## Configuration
 
-   ```bash
-   docker compose up --build
-   ```
+No environment variables are required for the default Docker Compose setup.
+
+Default service URLs used by the app:
+- Broker: `amqp://rabbitmq:5672//`
+- Result backend: `redis://redis:6379/0`
+
+If you need different infrastructure, update `app/tasks.py`.
 
 ## Usage
 
-1. **Access FastAPI Documentation**
+Submit an addition task:
 
-   Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser to explore the interactive API docs.
+```bash
+curl -X POST http://localhost:8000/add/3/4
+```
 
-2. **Submit a Task**
+Submit a multiplication task:
 
-   - **Via Browser or Postman**:
-     - **Endpoint**: `POST http://localhost:8000/add/{a}/{b}`
-     - **Example**: `POST http://localhost:8000/add/3/4`
+```bash
+curl -X POST http://localhost:8000/multiply/6/7
+```
 
-3. **Check Task Status**
+Both endpoints return:
 
-   - **Via Browser or Postman**:
-     - **Endpoint**: `GET http://localhost:8000/result/{task_id}`
-     - **Example**: `GET http://localhost:8000/result/<task_id>`
+```json
+{"task_id":"<id>"}
+```
 
-4. **Monitor Tasks with Flower UI**
+Check task status/result:
 
-   Open [http://localhost:5555](http://localhost:5555) in your browser to view real-time monitoring of Celery tasks.
+```bash
+curl http://localhost:8000/result/<task_id>
+```
 
-## Architecture Diagram
+Possible responses include:
+- `{"status":"PENDING"}`
+- `{"status":"SUCCESS","result":42}`
+- `{"status":"FAILURE","error":"..."}`
+
+## Contributing and Testing
+
+Contributions are welcome through issues and pull requests.
+
+There is no automated test suite yet. Use this manual smoke test:
+
+1. Start services with `docker compose up --build`.
+2. Call `POST /add/2/5` and copy the returned `task_id`.
+3. Poll `GET /result/<task_id>` until status is `SUCCESS`.
+
+Stop services:
+
+```bash
+docker compose down
+```
+
+## Architecture
 
 ![Architecture Diagram](diagram.png)
+
+## License
+
+MIT. See `LICENSE`.
